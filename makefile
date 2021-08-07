@@ -6,6 +6,7 @@ override CPPFLAGS +=
 override CXXFLAGS +=
 override LDFLAGS +=
 override LDLIBS += -lSDL2
+
 #############
 
 all: $(OBJS)

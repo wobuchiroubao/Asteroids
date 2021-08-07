@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include "engine.h"
 
@@ -9,6 +10,7 @@ Engine::Engine(int screen_width, int screen_height)
 , screen_height_(screen_height)
 , window_(NULL)
 , screen_surface_(NULL)
+, key_(NONE)
 {}
 
 int Engine::Initialize() {
@@ -28,23 +30,41 @@ int Engine::Initialize() {
   return 0;
 }
 
-void Engine::Render() {
-  SDL_FillRect(
-    screen_surface_, NULL, SDL_MapRGB(screen_surface_->format, 0x00, 0x00, 0x00)
-  );
-  SDL_Rect rect;
+bool Engine::PollEvents() {
+  SDL_Event e; // event handler
+  if (SDL_PollEvent(&e) == 0) {
+    key_ = NONE;
+  } else {
+    if (e.type == SDL_QUIT) {
+      return true;
+    } else if (e.type == SDL_KEYDOWN) { // key_ pressed
+      switch (e.key.keysym.sym) {
+        case SDLK_ESCAPE:
+          return true;
 
-  rect.x = 10;
-  rect.y = 0;
-  rect.w = 60;
-  rect.h = 30;
-  FillRect(rect, SDL_MapRGB(screen_surface_->format, 0x00, 0x00, 0xFF));
-  SDL_UpdateWindowSurface(window_);
-  SDL_Delay(2000); // wait two seconds
+        case SDLK_UP:
+          key_ = K_UP;
+          break;
+
+        case SDLK_DOWN:
+          key_ = K_DOWN;
+          break;
+
+        case SDLK_LEFT:
+          key_ = K_LEFT;
+          break;
+
+        case SDLK_RIGHT:
+          key_ = K_RIGHT;
+          break;
+      }
+    }
+  }
+  return false;
 }
 
-void Engine::FillRect(const SDL_Rect& rect, Uint32 color) {
-  SDL_FillRect(screen_surface_, &rect, color);
+keyword Engine::GetKey() {
+  return key_;
 }
 
 void Engine::Finalize() {
@@ -53,12 +73,27 @@ void Engine::Finalize() {
 }
 
 int main() {
-  Engine engine;
+  SDL_Surface *buffer = SDL_CreateRGBSurface(
+    0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00, 0x00, 0x00, 0x00
+  );
+
+  Engine engine(SCREEN_WIDTH, SCREEN_HEIGHT);
   if (engine.Initialize()) {
     cout << "Initialization failed." << endl;
     return -1;
   }
-  engine.Render();
+
+  auto prev_time = chrono::steady_clock::now();
+  chrono::time_point<std::chrono::steady_clock> cur_time;
+  bool quit = false;
+  while (!quit) {
+    quit = engine.PollEvents();
+    cur_time = chrono::steady_clock::now();
+    engine.Update(chrono::duration<float>(cur_time - prev_time).count());
+    prev_time = cur_time;
+    engine.Render();
+    SDL_Delay(200); // wait 0.2 seconds
+  }
 
   engine.Finalize();
 
