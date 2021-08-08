@@ -105,6 +105,8 @@ int main() {
     return -1;
   }
 
+  InitializeAll();
+
   auto prev_time = chrono::steady_clock::now();
   chrono::time_point<std::chrono::steady_clock> cur_time;
   bool quit = false;
@@ -115,7 +117,7 @@ int main() {
     prev_time = cur_time;
     tie(renderer, texture) = engine.GetRenderer();
     engine.Render();
-    SDL_Delay(200); // wait 0.2 seconds
+    SDL_Delay(20); // wait 0.02 seconds
   }
 
   engine.Finalize();

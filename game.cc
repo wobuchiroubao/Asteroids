@@ -1,7 +1,10 @@
+#include <utility>
+#include <tuple>
+
 #include "engine.h"
 #include "game.h"
 
-const size_t ASTEROIDS_NUM = 3;
+const size_t ASTEROIDS_NUM = 1;
 
 template <typename T, typename U>
 class FreedomDegrees final {
@@ -86,6 +89,20 @@ FreedomDegrees<T, U> operator*(float lhs, const FreedomDegrees<T, U>& rhs) {
   return rhs * lhs;
 }
 
+template <typename T, typename U>
+void WrapCoord(FreedomDegrees<T, U>& fd) {
+  if (fd.x_ < 0) {
+    fd.x_ += SCREEN_WIDTH;
+  } else if (fd.x_ > SCREEN_WIDTH) {
+    fd.x_ -= SCREEN_WIDTH;
+  }
+  if (fd.y_ < 0) {
+    fd.y_ += SCREEN_HEIGHT;
+  } else if (fd.y_ > SCREEN_HEIGHT) {
+    fd.y_ -= SCREEN_HEIGHT;
+  }
+}
+
 const int SPACESHIP_WIDTH = 20;
 const int SPACESHIP_HEIGHT = 20;
 
@@ -130,6 +147,7 @@ void SpaceShip::Init(
 
 void SpaceShip::Update(float dt) {
   position_ += dt * velocity_;
+  WrapCoord(position_);
 }
 
 void SpaceShip::Render() const {
@@ -177,25 +195,38 @@ void Asteroid::Init(
   *this = ast;
 }
 
+#include <iostream>
+
 void Asteroid::Update(float dt) {
   position_ += dt * velocity_;
+  std::cout << dt << std::endl;
+  //WrapCoord(position_);
 }
 
 void Asteroid::Render() const {
-
+  SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+  for (int x = position_.x_, x_end = position_.x_ + radius_; x < x_end; ++x) {
+    for (int y = position_.y_, y_end = position_.y_ + radius_; y < y_end; ++y) {
+      SDL_RenderDrawPoint(renderer, x, y);
+    }
+  }
 }
 
-SpaceShip spaceship(
-  {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, -90},
-  SPACESHIP_WIDTH, SPACESHIP_HEIGHT,
-  {0, 0, 0}
-);
+//SpaceShip spaceship(
+//  {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, -90},
+//  SPACESHIP_WIDTH, SPACESHIP_HEIGHT,
+//  {0, 0, 0}
+//);
 Asteroid asteroids[ASTEROIDS_NUM];
 //for (auto& asteroid : asteroids) {
 //  asteroid.Init(
 
 //  );
 //}
+
+void InitializeAll() {
+  asteroids[0].Init({100, 100, 0}, 15, {100, 60, 0});
+}
 
 void Engine::Update(float dt) {
   keyword key = GetKey();
@@ -215,10 +246,13 @@ void Engine::Update(float dt) {
     case K_RIGHT:
       break;
   }
+  for (auto& asteroid : asteroids) {
+    asteroid.Update(dt);
+  }
 }
 
 void RenderAll() {
-  spaceship.Render();
+  //spaceship.Render();
   for (const auto& asteroid : asteroids) {
     asteroid.Render();
   }

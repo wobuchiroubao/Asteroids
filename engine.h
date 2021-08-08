@@ -18,6 +18,7 @@ enum keyword {
 };
 
 void RenderAll();
+void InitializeAll();
 
 class Engine final {
 public:
