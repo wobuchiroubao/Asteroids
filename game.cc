@@ -1,59 +1,86 @@
 #include "engine.h"
 #include "game.h"
 
-template <typename T>
-class Vector2 final {
+template <typename T, typename U>
+class FreedomDegrees final {
 public:
-  Vector2() = default;
-  Vector2(T x, T y);
-  Vector2& operator+=(const Vector2& rhs);
-  Vector2& operator-=(const Vector2& rhs);
+  FreedomDegrees() = default;
+  FreedomDegrees(T x, T y, U alpha);
+  FreedomDegrees& operator+=(const FreedomDegrees& rhs);
+  FreedomDegrees& operator-=(const FreedomDegrees& rhs);
   T x_, y_;
+  U alpha_;
+
+private:
+  void LoopBack();
 };
 
-template <typename T>
-Vector2<T>::Vector2(T x, T y)
+template <typename T, typename U>
+FreedomDegrees<T, U>::FreedomDegrees(T x, T y, U alpha)
 : x_(x)
 , y_(y)
+, alpha_(alpha)
 {}
 
-template <typename T>
-Vector2<T> operator-(const Vector2<T>& v) {
-  return Vector2<T>(-v.x_, -v.y_);
+template <typename T, typename U>
+void FreedomDegrees<T, U>::LoopBack() {
+  alpha_ %= 360;
+  if (alpha_ < 0) {
+    alpha_ += 360;
+  }
 }
 
-template <typename T>
-Vector2<T>& Vector2<T>::operator+=(const Vector2& rhs) {
+template <typename T, typename U>
+FreedomDegrees<T, U> operator-(const FreedomDegrees<T, U>& fd) {
+  return FreedomDegrees<T, U>(-fd.x_, -fd.y_, -fd.alpha_);
+}
+
+template <typename T, typename U>
+FreedomDegrees<T, U>& FreedomDegrees<T, U>::operator+=(
+  const FreedomDegrees& rhs
+) {
   x_ += rhs.x_;
   y_ += rhs.y_;
+  alpha_ += rhs.alpha_;
+  LoopBack();
   return *this;
 }
 
-template <typename T>
-Vector2<T>& Vector2<T>::operator-=(const Vector2<T>& rhs) {
-  Vector2<T> tmp = -rhs;
+template <typename T, typename U>
+FreedomDegrees<T, U>& FreedomDegrees<T, U>::operator-=(
+  const FreedomDegrees<T, U>& rhs
+) {
+  FreedomDegrees<T, U> tmp = -rhs;
   x_ += tmp.x_;
   y_ += tmp.y_;
+  alpha_ += tmp.alpha_;
+  LoopBack();
   return *this;
 }
 
-template <typename T>
-Vector2<T> operator+(const Vector2<T>& lhs, const Vector2<T>& rhs) {
-  return Vector2<T>(lhs.x_ + rhs.x_, lhs.y_ + rhs.y_);
+template <typename T, typename U>
+FreedomDegrees<T, U> operator+(
+  const FreedomDegrees<T, U>& lhs, const FreedomDegrees<T, U>& rhs
+) {
+  return FreedomDegrees<T, U>(
+    lhs.x_ + rhs.x_, lhs.y_ + rhs.y_, lhs.alpha_ + rhs.alpha_
+  );
 }
 
-template <typename T>
-Vector2<T> operator-(const Vector2<T>& lhs, const Vector2<T>& rhs) {
+template <typename T, typename U>
+FreedomDegrees<T, U> operator-(
+  const FreedomDegrees<T, U>& lhs, const FreedomDegrees<T, U>& rhs
+) {
   return lhs + (-rhs);
 }
 
-template <typename T>
-Vector2<T> operator*(const Vector2<T>& lhs, float rhs) {
-  return Vector2<T>(lhs.x_ * rhs, lhs.y_ * rhs);
+template <typename T, typename U>
+FreedomDegrees<T, U> operator*(const FreedomDegrees<T, U>& lhs, float rhs) {
+  return FreedomDegrees<T, U>(lhs.x_ * rhs, lhs.y_ * rhs, lhs.alpha_ * rhs);
 }
 
-template <typename T>
-Vector2<T> operator*(float lhs, const Vector2<T>& rhs) {
+template <typename T, typename U>
+FreedomDegrees<T, U> operator*(float lhs, const FreedomDegrees<T, U>& rhs) {
   return rhs * lhs;
 }
 
@@ -62,19 +89,23 @@ const int SPACESHIP_HEIGHT = 20;
 
 class SpaceShip final {
 public:
-  SpaceShip(Vector2<int> position, int width, int height, Vector2<int> velocity);
+  SpaceShip(
+    FreedomDegrees<int, int> position, int width, int height,
+    FreedomDegrees<int, int> velocity
+  );
   void Update(float dt);
   void Render() const;
   operator SDL_Rect() const;
 
-  Vector2<int> position_;
+  FreedomDegrees<int, int> position_;
   int width_;
   int height_;
-  Vector2<int> velocity_;
+  FreedomDegrees<int, int> velocity_;
 };
 
 SpaceShip::SpaceShip(
-  Vector2<int> position, int width, int height, Vector2<int> velocity
+  FreedomDegrees<int, int> position, int width, int height,
+  FreedomDegrees<int, int> velocity
 )
 : position_(position)
 , width_(width)
@@ -96,9 +127,9 @@ SpaceShip::operator SDL_Rect() const {
 }
 
 SpaceShip spaceship(
-  {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2},
+  {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, -90},
   SPACESHIP_WIDTH, SPACESHIP_HEIGHT,
-  {0, 0}
+  {0, 0, 0}
 );
 
 void Engine::Update(float dt) {

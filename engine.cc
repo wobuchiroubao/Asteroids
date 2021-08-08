@@ -72,8 +72,10 @@ void Engine::Finalize() {
   SDL_Quit();
 }
 
+SDL_Surface *buffer;
+
 int main() {
-  SDL_Surface *buffer = SDL_CreateRGBSurface(
+  buffer = SDL_CreateRGBSurface(
     0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00, 0x00, 0x00, 0x00
   );
 
