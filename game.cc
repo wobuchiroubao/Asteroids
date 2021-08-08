@@ -7,146 +7,10 @@
 
 using namespace std;
 
+const int SPACESHIP_WIDTH = 30;
+const int SPACESHIP_HEIGHT = 30;
+const Vector<int> MODEL_VERTICES[3] = {{20, 0}, {-10, 10}, {-10,-10}};
 const size_t ASTEROIDS_NUM = 1;
-
-template <typename T>
-class Vector {
-public:
-  Vector();
-  Vector(T x, T y);
-  Vector& operator+=(const Vector& rhs);
-  Vector& operator-=(const Vector& rhs);
-
-  T x_, y_;
-};
-
-template <typename T>
-Vector<T>::Vector()
-: x_(0)
-, y_(0) {}
-
-template <typename T>
-Vector<T>::Vector(T x, T y)
-: x_(x)
-, y_(y) {}
-
-template <typename T>
-Vector<T> operator-(const Vector<T>& v) {
-  return Vector<T>(-v.x_, -v.y_);
-}
-
-template <typename T>
-Vector<T>& Vector<T>::operator+=(const Vector& rhs) {
-  x_ += rhs.x_;
-  y_ += rhs.y_;
-  return *this;
-}
-
-template <typename T>
-Vector<T>& Vector<T>::operator-=(const Vector<T>& rhs) {
-  Vector<T> tmp = -rhs;
-  x_ += tmp.x_;
-  y_ += tmp.y_;
-  return *this;
-}
-
-template <typename T>
-Vector<T> operator+(const Vector<T>& lhs, const Vector<T>& rhs) {
-  return Vector<T>(lhs.x_ + rhs.x_, lhs.y_ + rhs.y_);
-}
-
-template <typename T>
-Vector<T> operator-(const Vector<T>& lhs, const Vector<T>& rhs) {
-  return lhs + (-rhs);
-}
-
-template <typename T>
-Vector<T> operator*(const Vector<T>& lhs, float rhs) {
-  return Vector<T>(lhs.x_ * rhs, lhs.y_ * rhs);
-}
-
-template <typename T>
-Vector<T> operator*(float lhs, const Vector<T>& rhs) {
-  return rhs * lhs;
-}
-
-template <typename T>
-class Angle final {
-public:
-  Angle() = default;
-  Angle(T angle);
-  Angle& operator+=(const Angle& rhs);
-  Angle& operator-=(const Angle& rhs);
-  operator T() const;
-
-  T angle_;
-
-private:
-  void LoopBack();
-};
-
-template <typename T>
-Angle<T>::Angle(T angle)
-: angle_(angle) {
-  LoopBack();
-}
-
-template <typename T>
-Angle<T>::operator T() const {
-  return angle_;
-}
-
-template <typename T>
-void Angle<T>::LoopBack() {
-  fmod(angle_, 2 * M_PI);
-  if (angle_ < 0) {
-    angle_ += 2 * M_PI;
-  }
-}
-
-template <typename T>
-Angle<T> operator-(const Angle<T>& angle) {
-  return Angle<T>(-angle.angle_);
-}
-
-template <typename T>
-Angle<T>& Angle<T>::operator+=(
-  const Angle& rhs
-) {
-  angle_ += rhs.angle_;
-  LoopBack();
-  return *this;
-}
-
-template <typename T>
-Angle<T>& Angle<T>::operator-=(
-  const Angle<T>& rhs
-) {
-  Angle<T> tmp = -rhs;
-  angle_ += tmp.angle_;
-  LoopBack();
-  return *this;
-}
-
-template <typename T>
-Angle<T> operator+(const Angle<T>& lhs, const Angle<T>& rhs) {
-  return Angle<T>(lhs.angle_ + rhs.angle_);
-}
-
-template <typename T>
-Angle<T> operator-(const Angle<T>& lhs, const Angle<T>& rhs) {
-  return lhs + (-rhs);
-}
-
-template <typename T>
-Angle<T> operator*(const Angle<T>& lhs, T rhs) {
-  return Angle<T>(lhs.angle_ * rhs);
-}
-
-template <typename T>
-Angle<T> operator*(T lhs, const Angle<T>& rhs) {
-  return rhs * lhs;
-}
 
 template <typename T>
 void WrapCoord(T& x, T& y) {
@@ -167,52 +31,60 @@ void WrapRenderPoint(SDL_Renderer *renderer, int x, int y) {
   SDL_RenderDrawPoint(renderer, x, y);
 }
 
-const int SPACESHIP_WIDTH = 20;
-const int SPACESHIP_HEIGHT = 30;
-
 class SpaceShip final {
 public:
-  SpaceShip() = default;
+  SpaceShip(const Vector<int> *model_vertices);
   SpaceShip(
-    Vector<int> position, Angle<float> angle,
-    int width, int height, Vector<int> velocity
+    Vector<int> position, Angle<float> angle, int width, int height,
+    Vector<int> velocity, const Vector<int> *model_vertices
   );
   void Init(
-    Vector<int> position, Angle<float> angle,
-    int width, int height, Vector<int> velocity
+    Vector<int> position, Angle<float> angle, int width, int height,
+    Vector<int> velocity
   );
   void Update(float dt);
   void Render() const;
 
+  Vector<int> model_vertices_[3];
+  Vector<int> transformed_vertices_[3];
   Vector<int> position_;
   Angle<float> angle_;
   int width_;
   int height_;
   Vector<int> velocity_;
+
+private:
+  void UpdateVertices();
 };
 
+SpaceShip::SpaceShip(const Vector<int> *model_vertices)
+: model_vertices_({model_vertices[0], model_vertices[1], model_vertices[2]}) {}
+
 SpaceShip::SpaceShip(
-  Vector<int> position, Angle<float> angle,
-  int width, int height, Vector<int> velocity
+  Vector<int> position, Angle<float> angle, int width, int height,
+  Vector<int> velocity, const Vector<int> *model_vertices
 )
-: position_(position)
+: model_vertices_({model_vertices[0], model_vertices[1], model_vertices[2]})
+, position_(position)
 , angle_(angle)
 , width_(width)
 , height_(height)
-, velocity_(velocity)
-{}
+, velocity_(velocity) {
+  UpdateVertices();
+}
 
 void SpaceShip::Init(
-  Vector<int> position, Angle<float> angle,
-  int width, int height, Vector<int> velocity
+  Vector<int> position, Angle<float> angle, int width, int height,
+  Vector<int> velocity
 ) {
-  SpaceShip ss(position, angle, width, height, velocity);
+  SpaceShip ss(position, angle, width, height, velocity, model_vertices_);
   *this = ss;
 }
 
 void SpaceShip::Update(float dt) {
   position_ += dt * velocity_;
   WrapCoord(position_.x_, position_.y_);
+  UpdateVertices();
 }
 
 void SpaceShip::Render() const {
@@ -221,6 +93,12 @@ void SpaceShip::Render() const {
     for (int y = position_.y_, y_end = position_.y_ + height_; y < y_end; ++y) {
       WrapRenderPoint(renderer, x, y);
     }
+  }
+}
+
+void SpaceShip::UpdateVertices() {
+  for (size_t i = 0; i < 3; ++i) {
+    transformed_vertices_[i] = model_vertices_[i].Rotate(angle_);
   }
 }
 
@@ -265,7 +143,7 @@ void Asteroid::Render() const {
   }
 }
 
-SpaceShip spaceship;
+SpaceShip spaceship(MODEL_VERTICES);
 Asteroid asteroids[ASTEROIDS_NUM];
 
 void InitializeAll() {
@@ -295,9 +173,11 @@ void Engine::Update(float dt) {
       break;
 
     case K_LEFT:
+      spaceship.angle_ -= M_PI / 6;
       break;
 
     case K_RIGHT:
+      spaceship.angle_ += M_PI / 6;
       break;
   }
   spaceship.Update(dt);
