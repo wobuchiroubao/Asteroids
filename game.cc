@@ -118,8 +118,13 @@ void SpaceShip::Update(float dt) {
 }
 
 void SpaceShip::Render() const {
-  SDL_Rect rect = *this;
-  SDL_FillRect(buffer, &rect, SDL_MapRGB(buffer->format, 0xFF, 0xFF, 0xFF));
+  SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+  SDL_RenderDrawLine(renderer, 100, 100, 400, 200);
+
+  SDL_SetRenderTarget(renderer, NULL); // set window as render target
+  SDL_RenderCopy(renderer, texture, NULL, NULL); // stamp target onto window
+
+  SDL_RenderPresent(renderer); // update window
 }
 
 SpaceShip::operator SDL_Rect() const {
@@ -152,15 +157,7 @@ void Engine::Update(float dt) {
   }
 }
 
-void Engine::Render() {
-  /*SDL_Rect rect;
-
-  rect.x = 10;
-  rect.y = 0;
-  rect.w = 60;
-  rect.h = 30;
-  FillRect(rect, SDL_MapRGB(screen_surface_->format, 0x00, 0x00, 0xFF));*/
-  spaceship.Render();
-  SDL_BlitSurface(buffer, NULL, screen_surface_, NULL);
-  SDL_UpdateWindowSurface(window_);
+void RenderAll() {
+  SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+  SDL_RenderDrawLine(renderer, 100, 100, 400, 200);
 }

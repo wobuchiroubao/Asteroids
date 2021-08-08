@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <tuple>
 
 #include "engine.h"
 
@@ -9,7 +10,8 @@ Engine::Engine(int screen_width, int screen_height)
 : screen_width_(screen_width)
 , screen_height_(screen_height)
 , window_(NULL)
-, screen_surface_(NULL)
+, renderer_(NULL)
+, texture_(NULL)
 , key_(NONE)
 {}
 
@@ -26,7 +28,11 @@ int Engine::Initialize() {
     cout << "Window could not be created. SDL_Error: " << SDL_GetError() << endl;
     return -1;
   }
-  screen_surface_ = SDL_GetWindowSurface(window_);
+  renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_TARGETTEXTURE);
+  texture_ = SDL_CreateTexture(
+    renderer, TEXTURE_FORMAT, SDL_TEXTUREACCESS_TARGET,
+    SCREEN_WIDTH, SCREEN_HEIGHT
+  );
   return 0;
 }
 
@@ -67,18 +73,32 @@ keyword Engine::GetKey() {
   return key_;
 }
 
+pair<SDL_Renderer *, SDL_Texture *> Engine::GetRenderer() {
+  SDL_SetRenderTarget(renderer_, texture_);
+  SDL_SetRenderDrawColor(renderer_, 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE);
+  SDL_RenderClear(renderer_);
+
+  return make_pair(renderer_, texture_);
+}
+
+void Engine::Render() {
+  RenderAll();
+  SDL_SetRenderTarget(renderer_, NULL); // set window as render target
+  SDL_RenderCopy(renderer_, texture_, NULL, NULL); // stamp target onto window*/
+  SDL_RenderPresent(renderer_); // update window
+}
+
 void Engine::Finalize() {
+  SDL_DestroyTexture(texture_);
+  SDL_DestroyRenderer(renderer_);
   SDL_DestroyWindow(window_);
   SDL_Quit();
 }
 
-SDL_Surface *buffer;
+SDL_Renderer *renderer;
+SDL_Texture *texture;
 
 int main() {
-  buffer = SDL_CreateRGBSurface(
-    0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00, 0x00, 0x00, 0x00
-  );
-
   Engine engine(SCREEN_WIDTH, SCREEN_HEIGHT);
   if (engine.Initialize()) {
     cout << "Initialization failed." << endl;
@@ -93,6 +113,7 @@ int main() {
     cur_time = chrono::steady_clock::now();
     engine.Update(chrono::duration<float>(cur_time - prev_time).count());
     prev_time = cur_time;
+    tie(renderer, texture) = engine.GetRenderer();
     engine.Render();
     SDL_Delay(200); // wait 0.2 seconds
   }
