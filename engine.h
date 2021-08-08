@@ -31,7 +31,7 @@ public:
   void Render();
   void Finalize();
 
-//private:
+private:
   const int screen_width_;
   const int screen_height_;
   SDL_Window *window_;

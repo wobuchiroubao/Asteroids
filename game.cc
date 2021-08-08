@@ -4,6 +4,8 @@
 #include "engine.h"
 #include "game.h"
 
+using namespace std;
+
 const size_t ASTEROIDS_NUM = 1;
 
 template <typename T, typename U>
@@ -89,18 +91,24 @@ FreedomDegrees<T, U> operator*(float lhs, const FreedomDegrees<T, U>& rhs) {
   return rhs * lhs;
 }
 
-template <typename T, typename U>
-void WrapCoord(FreedomDegrees<T, U>& fd) {
-  if (fd.x_ < 0) {
-    fd.x_ += SCREEN_WIDTH;
-  } else if (fd.x_ > SCREEN_WIDTH) {
-    fd.x_ -= SCREEN_WIDTH;
+template <typename T>
+pair<T, T> WrapCoord(T x, T y) {
+  if (x < 0) {
+    x += SCREEN_WIDTH;
+  } else if (x > SCREEN_WIDTH) {
+    x -= SCREEN_WIDTH;
   }
-  if (fd.y_ < 0) {
-    fd.y_ += SCREEN_HEIGHT;
-  } else if (fd.y_ > SCREEN_HEIGHT) {
-    fd.y_ -= SCREEN_HEIGHT;
+  if (y < 0) {
+    y += SCREEN_HEIGHT;
+  } else if (y > SCREEN_HEIGHT) {
+    y -= SCREEN_HEIGHT;
   }
+  return {x, y};
+}
+
+void WrapRenderPoint(SDL_Renderer *renderer, int x, int y) {
+  tie(x, y) = WrapCoord(x, y);
+  SDL_RenderDrawPoint(renderer, x, y);
 }
 
 const int SPACESHIP_WIDTH = 20;
@@ -147,7 +155,7 @@ void SpaceShip::Init(
 
 void SpaceShip::Update(float dt) {
   position_ += dt * velocity_;
-  WrapCoord(position_);
+  tie(position_.x_, position_.y_) = WrapCoord(position_.x_, position_.y_);
 }
 
 void SpaceShip::Render() const {
@@ -195,19 +203,19 @@ void Asteroid::Init(
   *this = ast;
 }
 
-#include <iostream>
+//#include <iostream>
 
 void Asteroid::Update(float dt) {
   position_ += dt * velocity_;
-  std::cout << dt << std::endl;
-  //WrapCoord(position_);
+  //std::cout << dt << std::endl;
+  tie(position_.x_, position_.y_) = WrapCoord(position_.x_, position_.y_);
 }
 
 void Asteroid::Render() const {
   SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
   for (int x = position_.x_, x_end = position_.x_ + radius_; x < x_end; ++x) {
     for (int y = position_.y_, y_end = position_.y_ + radius_; y < y_end; ++y) {
-      SDL_RenderDrawPoint(renderer, x, y);
+      WrapRenderPoint(renderer, x, y);
     }
   }
 }
@@ -225,7 +233,7 @@ Asteroid asteroids[ASTEROIDS_NUM];
 //}
 
 void InitializeAll() {
-  asteroids[0].Init({100, 100, 0}, 15, {100, 60, 0});
+  asteroids[0].Init({100, 100, 0}, 60, {100, 60, 0});
 }
 
 void Engine::Update(float dt) {
