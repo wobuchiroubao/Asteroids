@@ -1,6 +1,8 @@
 #include "engine.h"
 #include "game.h"
 
+const size_t ASTEROIDS_NUM = 3;
+
 template <typename T, typename U>
 class FreedomDegrees final {
 public:
@@ -89,7 +91,12 @@ const int SPACESHIP_HEIGHT = 20;
 
 class SpaceShip final {
 public:
+  SpaceShip() = default;
   SpaceShip(
+    FreedomDegrees<int, int> position, int width, int height,
+    FreedomDegrees<int, int> velocity
+  );
+  void Init(
     FreedomDegrees<int, int> position, int width, int height,
     FreedomDegrees<int, int> velocity
   );
@@ -113,6 +120,14 @@ SpaceShip::SpaceShip(
 , velocity_(velocity)
 {}
 
+void SpaceShip::Init(
+  FreedomDegrees<int, int> position, int width, int height,
+  FreedomDegrees<int, int> velocity
+) {
+  SpaceShip ss(position, width, height, velocity);
+  *this = ss;
+}
+
 void SpaceShip::Update(float dt) {
   position_ += dt * velocity_;
 }
@@ -120,15 +135,54 @@ void SpaceShip::Update(float dt) {
 void SpaceShip::Render() const {
   SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
   SDL_RenderDrawLine(renderer, 100, 100, 400, 200);
-
-  SDL_SetRenderTarget(renderer, NULL); // set window as render target
-  SDL_RenderCopy(renderer, texture, NULL, NULL); // stamp target onto window
-
-  SDL_RenderPresent(renderer); // update window
 }
 
 SpaceShip::operator SDL_Rect() const {
   return {position_.x_, position_.y_, width_, height_};
+}
+
+class Asteroid final {
+public:
+  Asteroid() = default;
+  Asteroid(
+    FreedomDegrees<int, int> position, int radius,
+    FreedomDegrees<int, int> velocity
+  );
+  void Init(
+    FreedomDegrees<int, int> position, int radius,
+    FreedomDegrees<int, int> velocity
+  );
+  void Update(float dt);
+  void Render() const;
+
+  FreedomDegrees<int, int> position_;
+  int radius_;
+  FreedomDegrees<int, int> velocity_;
+};
+
+Asteroid::Asteroid(
+  FreedomDegrees<int, int> position, int radius,
+  FreedomDegrees<int, int> velocity
+)
+: position_(position)
+, radius_(radius)
+, velocity_(velocity)
+{}
+
+void Asteroid::Init(
+  FreedomDegrees<int, int> position, int radius,
+    FreedomDegrees<int, int> velocity
+) {
+  Asteroid ast(position, radius, velocity);
+  *this = ast;
+}
+
+void Asteroid::Update(float dt) {
+  position_ += dt * velocity_;
+}
+
+void Asteroid::Render() const {
+
 }
 
 SpaceShip spaceship(
@@ -136,6 +190,12 @@ SpaceShip spaceship(
   SPACESHIP_WIDTH, SPACESHIP_HEIGHT,
   {0, 0, 0}
 );
+Asteroid asteroids[ASTEROIDS_NUM];
+//for (auto& asteroid : asteroids) {
+//  asteroid.Init(
+
+//  );
+//}
 
 void Engine::Update(float dt) {
   keyword key = GetKey();
@@ -158,6 +218,8 @@ void Engine::Update(float dt) {
 }
 
 void RenderAll() {
-  SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-  SDL_RenderDrawLine(renderer, 100, 100, 400, 200);
+  spaceship.Render();
+  for (const auto& asteroid : asteroids) {
+    asteroid.Render();
+  }
 }
